@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div style="text-align: center; margin-top: 60px;">
+        <h1 style="font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; line-height: 1.1;">
+            Domina la <br>
+            <span style="color: var(--primary);">Premier League</span>
+        </h1>
+        
+        <p style="color: var(--text-muted); font-size: 1.2rem; max-width: 600px; margin: 20px auto 40px;">
+            Compite contra tus compañeros de trabajo en la plataforma de pronósticos más moderna.
+        </p>
+
+        {% if user.is_authenticated %}
+            <div style="display: flex; gap: 20px; justify-content: center;">
+                <a href="{% url 'prode' %}" class="btn-action">🔥 Jugar Fecha Actual</a>
+                <a href="{% url 'ranking' %}" class="btn-outline">Ver Tabla 🏆</a>
+            </div>
+        {% else %}
+            <div style="background: var(--card-bg); padding: 30px; border-radius: var(--radius); border: 1px solid var(--card-border); display: inline-block;">
+                <p style="margin-bottom: 20px;">Necesitas una cuenta para empezar a sumar puntos.</p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <a href="{% url 'login' %}" class="btn-action">Iniciar Sesión</a>
+                    <a href="{% url 'registro' %}" class="btn-outline">Crear Cuenta</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

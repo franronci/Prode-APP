@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div style="background: #18181b; max-width: 400px; margin: 80px auto; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid #27272a;">
+        <h2 style="color: #e4e4e7; font-weight: 800; margin-bottom: 30px;">🔐 Iniciar Sesión</h2>
+        
+        <style>
+            .login-form input[type="text"], 
+            .login-form input[type="password"] {
+                width: 100%;
+                padding: 14px;
+                margin-bottom: 20px;
+                border: 1px solid #3f3f46;
+                border-radius: 12px;
+                background-color: #27272a;
+                color: white;
+                font-family: 'Inter', sans-serif;
+                outline: none;
+                transition: all 0.3s ease;
+                box-sizing: border-box; /* Importante para que el padding no rompa el ancho */
+            }
+            
+            .login-form input:focus {
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+            }
+
+            .login-form label {
+                display: block;
+                text-align: left;
+                margin-bottom: 8px;
+                color: #a1a1aa;
+                font-weight: 600;
+                font-size: 0.9rem;
+            }
+            
+            .btn-login-submit {
+                background: linear-gradient(135deg, var(--primary), #7c3aed);
+                color: white; border: none; padding: 14px; font-size: 18px;
+                border-radius: 12px; cursor: pointer; width: 100%; font-weight: bold;
+                transition: all 0.3s ease;
+            }
+            .btn-login-submit:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
+            }
+        </style>
+
+        <form method="post" class="login-form">
+            {% csrf_token %}
+            <label for="{{ form.username.id_for_label }}">Usuario</label>
+            {{ form.username }}
+            
+            <label for="{{ form.password.id_for_label }}">Contraseña</label>
+            {{ form.password }}
+
+            <button type="submit" class="btn-login-submit">Ingresar</button>
+        </form>
+        
+        <br>
+        <p style="color: #a1a1aa;">¿No tienes cuenta? <a href="{% url 'registro' %}" style="color: var(--primary); font-weight: bold;">Regístrate aquí</a></p>
+    </div>
+{% endblock %}

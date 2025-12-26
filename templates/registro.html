@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div style="background: #18181b; max-width: 400px; margin: 60px auto; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid #27272a;">
+        <h2 style="color: #e4e4e7; font-weight: 800; margin-bottom: 30px;">📝 Crear Cuenta</h2>
+        
+        <style>
+            .registro-form input[type="text"], 
+            .registro-form input[type="password"] {
+                width: 100%; padding: 14px; margin-bottom: 15px;
+                border: 1px solid #3f3f46; border-radius: 12px;
+                background-color: #27272a; color: white;
+                font-family: 'Inter', sans-serif; outline: none;
+                transition: all 0.3s ease; box-sizing: border-box;
+            }
+            
+            .registro-form input:focus {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+            }
+
+            .registro-form label {
+                display: block; text-align: left; margin-bottom: 8px;
+                color: #a1a1aa; font-weight: 600; font-size: 0.9rem;
+            }
+
+            /* Estilo para los textos de ayuda de Django (ej: requisitos de contraseña) */
+            .helptext {
+                display: block; text-align: left; font-size: 0.8rem; 
+                color: #71717a; margin-bottom: 15px; margin-top: -10px;
+            }
+            
+            .btn-registro-submit {
+                background: linear-gradient(135deg, var(--accent), #059669);
+                color: #09090b; border: none; padding: 14px; font-size: 18px;
+                border-radius: 12px; cursor: pointer; width: 100%; font-weight: 800;
+                transition: all 0.3s ease;
+            }
+            .btn-registro-submit:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+            }
+        </style>
+
+        <form method="post" class="registro-form">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                    <span class="helptext">{{ field.help_text|safe }}</span>
+                {% endif %}
+            {% endfor %}
+
+            <button type="submit" class="btn-registro-submit" style="margin-top: 20px;">Registrarme</button>
+        </form>
+        
+        <br>
+        <p style="color: #a1a1aa;">¿Ya tienes cuenta? <a href="{% url 'login' %}" style="color: var(--accent); font-weight: bold;">Inicia Sesión</a></p>
+    </div>
+{% endblock %}

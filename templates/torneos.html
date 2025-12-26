@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .torneo-card {
+        background: var(--card-bg); border: 1px solid var(--card-border);
+        padding: 20px; border-radius: 16px; margin-bottom: 15px;
+        display: flex; justify-content: space-between; align-items: center;
+        transition: var(--transition);
+    }
+    .torneo-card:hover { border-color: var(--primary); transform: translateY(-3px); }
+    
+    .form-box {
+        background: #121214; padding: 25px; border-radius: 16px;
+        border: 1px solid var(--card-border); margin-bottom: 40px;
+    }
+</style>
+
+<div style="max-width: 800px; margin: auto;">
+    
+    <h1 style="text-align: center; margin-bottom: 40px;">🏆 Torneos de Amigos</h1>
+
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        
+        <div class="form-box" style="flex: 1;">
+            <h3 style="color: var(--accent); margin-top: 0;">✨ Crear Nuevo</h3>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="crear_torneo" value="true">
+                <input type="text" name="nombre_torneo" placeholder="Nombre del grupo..." required
+                       style="width: 100%; margin-bottom: 10px; box-sizing: border-box;">
+                <button type="submit" class="btn-action" style="width: 100%;">Crear Torneo</button>
+            </form>
+        </div>
+
+        <div class="form-box" style="flex: 1;">
+            <h3 style="color: var(--primary); margin-top: 0;">🚀 Unirse a uno</h3>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="unirse_torneo" value="true">
+                <input type="text" name="codigo_torneo" placeholder="Ingresa el Código..." required
+                       style="width: 100%; margin-bottom: 10px; box-sizing: border-box;">
+                <button type="submit" class="btn-outline" style="width: 100%; color: white; background: #27272a;">Unirse</button>
+            </form>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <p style="color: #ef4444; font-size: 0.9rem; margin-top: 10px;">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+    <h2 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px;">Mis Ligas Activas</h2>
+    
+    {% for torneo in mis_grupos %}
+        <a href="{% url 'detalle_torneo' torneo.id %}">
+            <div class="torneo-card">
+                <div>
+                    <div style="font-weight: bold; font-size: 1.2rem;">{{ torneo.nombre }}</div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">Participantes: {{ torneo.participantes.count }}</div>
+                </div>
+                <div style="text-align: right;">
+                    <span style="background: #27272a; padding: 5px 10px; border-radius: 8px; font-family: monospace; color: var(--accent);">
+                        CÓDIGO: {{ torneo.codigo }}
+                    </span>
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">Clic para ver tabla 👉</div>
+                </div>
+            </div>
+        </a>
+    {% empty %}
+        <p style="text-align: center; color: var(--text-muted); padding: 40px;">No estás en ningún torneo de amigos aún.</p>
+    {% endfor %}
+
+</div>
+{% endblock %}

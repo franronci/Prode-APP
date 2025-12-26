@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div style="text-align: center; margin-bottom: 30px;">
+    <a href="{% url 'mis_torneos' %}" style="color: var(--text-muted); font-size: 0.9rem;">⬅ Volver a mis torneos</a>
+    <h1 style="margin: 10px 0;">{{ torneo.nombre }}</h1>
+    
+    <div style="background: rgba(139, 92, 246, 0.1); display: inline-block; padding: 10px 20px; border-radius: 12px; border: 1px dashed var(--primary);">
+        <span style="color: var(--text-muted); font-size: 0.9rem;">Invita a tus amigos con este código:</span>
+        <div style="font-size: 1.5rem; font-weight: 800; color: white; letter-spacing: 2px; margin-top: 5px;">
+            {{ torneo.codigo }}
+        </div>
+    </div>
+</div>
+
+<style>
+    .ranking-table { width: 100%; border-collapse: collapse; background-color: var(--card-bg); border-radius: 16px; overflow: hidden; }
+    .ranking-table th { background-color: #111; color: var(--text-muted); padding: 20px; text-align: left; }
+    .ranking-table td { padding: 20px; border-bottom: 1px solid var(--card-border); color: var(--text-main); }
+    .rank-1 { background: linear-gradient(90deg, rgba(255, 215, 0, 0.1), transparent); }
+    .points-bubble { background-color: #27272a; color: var(--accent); padding: 5px 12px; border-radius: 50px; font-weight: bold; }
+</style>
+
+<table class="ranking-table">
+    <thead>
+        <tr>
+            <th width="10%">#</th>
+            <th>Jugador</th>
+            <th style="text-align: right;">Puntos</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for perfil in perfiles %}
+        <tr class="{% if forloop.counter == 1 %}rank-1{% endif %}">
+            <td style="font-weight: 800;">{{ forloop.counter }}</td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 30px; height: 30px; background: #3f3f46; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">
+                        {{ perfil.usuario.username|slice:":1"|upper }}
+                    </div>
+                    {{ perfil.usuario.username }}
+                    {% if perfil.usuario == request.user %} (Tú){% endif %}
+                </div>
+            </td>
+            <td style="text-align: right;">
+                <span class="points-bubble">{{ perfil.puntos_totales }}</span>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
