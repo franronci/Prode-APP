@@ -1,49 +1,46 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
-import uuid # <--- Agregar import al principio del archivo
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.db.models import Sum
 
-# 1. Modelo de EMPRESA (Tus clientes)
+# --- MODELO EMPRESA ---
 class Empresa(models.Model):
     nombre = models.CharField(max_length=100)
-    codigo_acceso = models.CharField(max_length=20, unique=True, help_text="Código para que los empleados se registren")
-
+    codigo_acceso = models.CharField(max_length=50, unique=True)
+    
     def __str__(self):
         return self.nombre
 
-# 2. Perfil de USUARIO (Extensión del empleado)
-# Django ya trae un usuario básico, aquí le agregamos la relación con la empresa
+# --- MODELO PERFIL DE EMPLEADO (Ranking) ---
 class PerfilEmpleado(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
-    # --- CAMBIO AQUÍ ---
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, null=True, blank=True)
-    # -------------------
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     puntos_totales = models.IntegerField(default=0)
-
+    
     def __str__(self):
-        return f"{self.usuario.username} - {self.empresa.nombre if self.empresa else 'Sin Empresa'}"
+        return f"{self.usuario.username} - {self.puntos_totales} pts"
 
-# 3. Modelo de PARTIDO (El fixture del mundial)
+# --- MODELO PARTIDO ---
 class Partido(models.Model):
-    api_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
-    numero_fecha = models.IntegerField(default=1) 
-    
     equipo_local = models.CharField(max_length=50)
-    # --- NUEVO CAMPO ---
-    escudo_local = models.URLField(max_length=200, null=True, blank=True)
-    
     equipo_visitante = models.CharField(max_length=50)
-    # --- NUEVO CAMPO ---
-    escudo_visitante = models.URLField(max_length=200, null=True, blank=True)
+    escudo_local = models.URLField(blank=True, null=True)     # URL de imagen
+    escudo_visitante = models.URLField(blank=True, null=True) # URL de imagen
     
     fecha_hora = models.DateTimeField()
-    goles_local_real = models.IntegerField(null=True, blank=True)
-    goles_visitante_real = models.IntegerField(null=True, blank=True)
+    numero_fecha = models.IntegerField() # Ej: Fecha 1, Fecha 2...
+    
+    # Resultado Real (Lo carga el admin después)
+    goles_local_real = models.IntegerField(blank=True, null=True)
+    goles_visitante_real = models.IntegerField(blank=True, null=True)
     jugado = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"F{self.numero_fecha}: {self.equipo_local} vs {self.equipo_visitante}"
+        return f"Fecha {self.numero_fecha}: {self.equipo_local} vs {self.equipo_visitante}"
 
-# 4. Modelo de PRONÓSTICO (La apuesta del usuario)
+# --- MODELO PRONÓSTICO (La apuesta del usuario) ---
 class Pronostico(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     partido = models.ForeignKey(Partido, on_delete=models.CASCADE)
@@ -52,76 +49,81 @@ class Pronostico(models.Model):
     goles_visitante_prediccion = models.IntegerField()
     
     puntos_ganados = models.IntegerField(default=0)
-
+    
     class Meta:
-        unique_together = ('usuario', 'partido')
+        unique_together = ('usuario', 'partido') # Un usuario no puede apostar 2 veces al mismo partido
 
     def __str__(self):
         return f"{self.usuario} - {self.partido}"
 
-    # --- AQUÍ ESTÁ LA LÓGICA DE PUNTOS ---
-    def actualizar_puntos(self):
-        # Si el partido no se jugó, no hacemos nada
-        if not self.partido.jugado:
-            return
-
-        # Resultados reales
-        real_local = self.partido.goles_local_real
-        real_visitante = self.partido.goles_visitante_real
-        
-        # Predicciones
-        pred_local = self.goles_local_prediccion
-        pred_visitante = self.goles_visitante_prediccion
-
-        # 1. ¿Acertó el resultado exacto? (Ej: Dijo 2-1 y salió 2-1)
-        if real_local == pred_local and real_visitante == pred_visitante:
-            self.puntos_ganados = 3
-        
-        # 2. ¿Acertó quién ganaba (o el empate), aunque no los goles exactos?
-        # Checkeamos si el signo es el mismo (Ambos ganan local, o ambos empate, o ambos visitante)
-        elif (real_local > real_visitante and pred_local > pred_visitante) or \
-             (real_local == real_visitante and pred_local == pred_visitante) or \
-             (real_local < real_visitante and pred_local < pred_visitante):
-            self.puntos_ganados = 1
-        
-        # 3. No acertó nada
-        else:
-            self.puntos_ganados = 0
-            
-        # Guardamos el cambio en la base de datos
-        self.save()
-        
-        # EXTRA: Actualizar también los puntos totales del empleado
-        self.actualizar_perfil_empleado()
-
-    def actualizar_perfil_empleado(self):
-        # Buscamos el perfil del empleado y le recalculamos el total
-        # (Esto suma TODOS sus pronósticos de nuevo para estar seguros)
-        perfil = self.usuario.perfilempleado
-        total = 0
-        pronosticos_usuario = Pronostico.objects.filter(usuario=self.usuario)
-        for p in pronosticos_usuario:
-            total += p.puntos_ganados
-        
-        perfil.puntos_totales = total
-        perfil.save()
-
-    class Meta:
-        unique_together = ('usuario', 'partido') # Un usuario solo puede pronosticar una vez por partido
-
-
+# --- MODELO TORNEO (Ligas de amigos) ---
 class Torneo(models.Model):
     nombre = models.CharField(max_length=100)
     codigo = models.CharField(max_length=10, unique=True, editable=False)
-    # Relación muchos a muchos: Un usuario puede estar en muchos torneos
     participantes = models.ManyToManyField(User, related_name='torneos_participados')
     creador = models.ForeignKey(User, on_delete=models.CASCADE, related_name='torneos_creados')
 
     def save(self, *args, **kwargs):
-        # Generamos código único automático si no tiene
         if not self.codigo:
             self.codigo = str(uuid.uuid4()).replace('-', '')[:6].upper()
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.nombre} ({self.codigo})"
+
+
+# --- AUTOMATIZACIÓN DE PUNTOS (SIGNALS) ---
+# Esto corre automáticamente cada vez que el Admin guarda un Partido como "Jugado"
+@receiver(post_save, sender=Partido)
+def actualizar_puntos_al_guardar_resultado(sender, instance, **kwargs):
+    if instance.jugado:
+        print(f"🔄 Calculando puntos para: {instance}")
+        
+        # 1. Buscar todos los pronósticos de este partido
+        pronosticos = Pronostico.objects.filter(partido=instance)
+        
+        real_local = instance.goles_local_real
+        real_visitante = instance.goles_visitante_real
+        
+        # 2. Calcular puntos para cada pronóstico
+        for pron in pronosticos:
+            pred_local = pron.goles_local_prediccion
+            pred_visitante = pron.goles_visitante_prediccion
+            puntos = 0
+
+            # Si acertó exacto (Ej: Dijo 2-1 y salió 2-1) -> 3 Puntos
+            if real_local == pred_local and real_visitante == pred_visitante:
+                puntos = 3
+            else:
+                # Verificamos quién ganó o si fue empate
+                gano_local_real = real_local > real_visitante
+                gano_visita_real = real_visitante > real_local
+                empate_real = real_local == real_visitante
+                
+                gano_local_pred = pred_local > pred_visitante
+                gano_visita_pred = pred_visitante > pred_local
+                empate_pred = pred_local == pred_visitante
+                
+                # Si acertó el resultado (quién ganó) pero no los goles exactos -> 1 Punto
+                if (gano_local_real and gano_local_pred) or \
+                   (gano_visita_real and gano_visita_pred) or \
+                   (empate_real and empate_pred):
+                    puntos = 1
+            
+            # Solo guardamos si cambió el puntaje para optimizar
+            if pron.puntos_ganados != puntos:
+                pron.puntos_ganados = puntos
+                pron.save()
+
+        # 3. ACTUALIZAR EL RANKING (TABLA DE POSICIONES)
+        # Recalculamos el total SOLO para los usuarios afectados
+        usuarios_afectados = pronosticos.values_list('usuario', flat=True)
+        perfiles = PerfilEmpleado.objects.filter(usuario__id__in=usuarios_afectados)
+
+        for perfil in perfiles:
+            resultado = Pronostico.objects.filter(usuario=perfil.usuario).aggregate(Sum('puntos_ganados'))
+            total = resultado['puntos_ganados__sum']
+            perfil.puntos_totales = total if total else 0
+            perfil.save()
+            
+        print("✅ Ranking actualizado automáticamente.")
