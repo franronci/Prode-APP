@@ -44,8 +44,9 @@ class Command(BaseCommand):
                     p.delete()
                 total_eliminados += 1
         
-        # 2. Eliminar duplicados por equipo_local, equipo_visitante y numero_fecha (para partidos sin api_id)
-        self.stdout.write("\n📋 Buscando duplicados por equipos y fecha (sin api_id)...")
+        # 2. Eliminar duplicados por equipo_local, equipo_visitante y numero_fecha
+        # (cuando no se puede usar api_id para identificar duplicados)
+        self.stdout.write("\n📋 Buscando duplicados por equipos y fecha...")
         duplicados_equipos = Partido.objects.values(
             'equipo_local', 'equipo_visitante', 'numero_fecha'
         ).annotate(
@@ -61,15 +62,21 @@ class Command(BaseCommand):
                 numero_fecha=dup['numero_fecha']
             ).order_by('id')
             
-            # Si todos tienen api_id=None, eliminar duplicados
-            if partidos.filter(api_id__isnull=True).count() == partidos.count():
-                mantener = partidos.first()
-                eliminar = partidos[1:]
+            # Si hay más de uno, mantener el mejor candidato y eliminar el resto
+            if partidos.count() > 1:
+                # Prioridad: mantener el que tiene api_id, si ninguno tiene, mantener el más antiguo (menor ID)
+                partido_con_api = partidos.filter(api_id__isnull=False).first()
+                if partido_con_api:
+                    mantener = partido_con_api
+                else:
+                    mantener = partidos.first()  # El más antiguo
+                
+                eliminar = partidos.exclude(id=mantener.id)
                 
                 self.stdout.write(f"\n  {dup['equipo_local']} vs {dup['equipo_visitante']} (Fecha {dup['numero_fecha']}):")
-                self.stdout.write(f"    ✅ Manteniendo: ID {mantener.id} - {mantener}")
+                self.stdout.write(f"    ✅ Manteniendo: ID {mantener.id} (api_id={mantener.api_id}) - {mantener}")
                 for p in eliminar:
-                    self.stdout.write(f"    ❌ Eliminando: ID {p.id} - {p}")
+                    self.stdout.write(f"    ❌ Eliminando: ID {p.id} (api_id={p.api_id}) - {p}")
                     if not dry_run:
                         p.delete()
                     total_eliminados += 1
