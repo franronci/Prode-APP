@@ -139,6 +139,14 @@
             text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;
         }
 
+        .match-date-badge {
+            margin-top: 8px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
         /* RESPONSIVE */
         @media (max-width: 650px) {
             .match-card { padding: 15px 10px; }
@@ -213,6 +221,10 @@
                     {% endif %}
                 </div>
                 {% endif %}
+
+                <div class="match-date-badge">
+                    {{ item.partido.fecha_hora|date:"d/m/Y H:i" }}
+                </div>
             </div>
             
             <div class="team-container team-visitante">
