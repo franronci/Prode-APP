@@ -24,6 +24,7 @@ class PerfilEmpleado(models.Model):
 
 # --- MODELO PARTIDO ---
 class Partido(models.Model):
+    api_id = models.CharField(max_length=50, unique=True, blank=True, null=True)  # ID de la API de Football Data
     equipo_local = models.CharField(max_length=50)
     equipo_visitante = models.CharField(max_length=50)
     escudo_local = models.URLField(blank=True, null=True)     # URL de imagen
