@@ -71,49 +71,27 @@ class Command(BaseCommand):
                     goles_local = match['score']['fullTime']['home']
                     goles_visitante = match['score']['fullTime']['away']
                 
-                # Buscar si el partido ya existe
-                partido_existente = Partido.objects.filter(api_id=api_id).first()
+                # Usar update_or_create para evitar duplicados
+                partido, creado = Partido.objects.update_or_create(
+                    api_id=api_id,
+                    defaults={
+                        'numero_fecha': numero_fecha,
+                        'equipo_local': equipo_local,
+                        'escudo_local': escudo_local,
+                        'equipo_visitante': equipo_visitante,
+                        'escudo_visitante': escudo_visitante,
+                        'fecha_hora': fecha_hora,
+                        'jugado': jugado,
+                        'goles_local_real': goles_local,
+                        'goles_visitante_real': goles_visitante,
+                    }
+                )
                 
-                if partido_existente:
-                    # Actualizar partido existente
-                    actualizado = False
-                    if partido_existente.jugado != jugado:
-                        actualizado = True
-                    if partido_existente.goles_local_real != goles_local:
-                        actualizado = True
-                    if partido_existente.goles_visitante_real != goles_visitante:
-                        actualizado = True
-                    
-                    partido_existente.numero_fecha = numero_fecha
-                    partido_existente.equipo_local = equipo_local
-                    partido_existente.equipo_visitante = equipo_visitante
-                    partido_existente.escudo_local = escudo_local
-                    partido_existente.escudo_visitante = escudo_visitante
-                    partido_existente.fecha_hora = fecha_hora
-                    partido_existente.jugado = jugado
-                    partido_existente.goles_local_real = goles_local
-                    partido_existente.goles_visitante_real = goles_visitante
-                    partido_existente.save()
-                    
-                    if actualizado:
-                        partidos_actualizados += 1
-                        self.stdout.write(self.style.SUCCESS(f"✅ Actualizado: {partido_existente}"))
-                else:
-                    # Crear nuevo partido si no existe
-                    Partido.objects.create(
-                        api_id=api_id,
-                        numero_fecha=numero_fecha,
-                        equipo_local=equipo_local,
-                        escudo_local=escudo_local,
-                        equipo_visitante=equipo_visitante,
-                        escudo_visitante=escudo_visitante,
-                        fecha_hora=fecha_hora,
-                        jugado=jugado,
-                        goles_local_real=goles_local,
-                        goles_visitante_real=goles_visitante,
-                    )
+                if creado:
                     partidos_nuevos += 1
-                    self.stdout.write(self.style.WARNING(f"➕ Nuevo partido creado: {equipo_local} vs {equipo_visitante}"))
+                    self.stdout.write(self.style.WARNING(f"➕ Nuevo partido creado: {partido}"))
+                else:
+                    partidos_actualizados += 1
             
             self.stdout.write(self.style.SUCCESS(
                 f"🏁 Proceso finalizado. Actualizados: {partidos_actualizados}, Nuevos: {partidos_nuevos}"
